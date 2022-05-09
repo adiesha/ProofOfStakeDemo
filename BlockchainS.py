@@ -50,6 +50,7 @@ class BlockchainS:
 
         block = BlockS(nextblockid)
         block.addTransactions(transactions)
+        block.miner = self.clientid
         if self.last is not None:
             block.prevhash = self.last.hash
         block.coinbase = (self.clientid, 100)
@@ -67,7 +68,7 @@ class BlockchainS:
         self.sendMessage(block, "hook")
 
         # commit the message
-
+        self.commitBlock()
 
         # newblockid = self.getLastBlockId() + 1
         # block = BlockS(newblockid)
@@ -320,12 +321,12 @@ class BlockchainS:
                     print("Block was already committed, therefore signature will not be added")
                     return True, "Block was already committed, therefore signature will not be added"
 
-                self.hook.addSign(signature)
+                self.hook.addSign((nid, signature))
                 # if number of signatures are more than the majority then accept
                 # number of signatures = len(self.hook.signatures) + 1 for the miner
                 noOfconsensus = 1 + len(self.hook.signatures)
                 if noOfconsensus >= self.getSimpleMajority():
-                    print("commit block")
+                    print("commit block: Number of consensus {0}".format(noOfconsensus))
                     self.addNewBlockToChain(self.hook)
                     return [True, "Block was committed"]
                 else:
@@ -335,7 +336,9 @@ class BlockchainS:
                 print("Invalid signature was received as a reply for block id: {0} by node {1}".format(msg.id, nid))
                 return [False,
                         "Invalid signature was received as a reply for block id: {0} by node {1}".format(msg.id, nid)]
-
+        elif type == 'commit':
+            self.addNewBlockToChain(msg)
+            return [True, "Added to the blocl"]
         else:
             print("Incorrect type")
             return [False, "Incorrect request type"]
@@ -435,13 +438,13 @@ class BlockchainS:
         if self.last is None:
             return 0
         else:
-            return self.last.id + 1
+            return self.last.id
 
     def updateTheownershipMap(self):
         # update the ownership map to zero if they don't have keys
         for k in self.map.keys():
-            if k not in self.ownershipMap:
-                self.ownershipMap[k] = 0
+            # if k not in self.ownershipMap:
+            self.ownershipMap[k] = 0
 
         if self.last is None:
             return self.ownershipMap
@@ -456,6 +459,14 @@ class BlockchainS:
             return int(len(self.map) / 2 + 1)
         else:
             return int(len(self.map) / 2) + 1
+
+    def commitBlock(self):
+        # check whether last block is not committed
+        print("trying to commit")
+        if self.last is not None:
+            self.last.committed = True
+            print("Commit message for block id: {0}".format(self.last.id))
+            self.sendMessage(self.last, "commit")
 
 
 def _persist(obj, log):

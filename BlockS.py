@@ -1,5 +1,4 @@
 import hashlib
-import time
 
 
 class BlockS:
@@ -15,6 +14,7 @@ class BlockS:
         self.coinbase = (None, 0)
         self.signatures = []
         self.committed = False
+        self.verifierReward = 10
 
     def gethash(self):
         text = self.gethashablestring()
@@ -61,12 +61,25 @@ class BlockS:
             print(t)
 
     def addSign(self, sign):
-        self.signatures.append(sign)
+        if type(sign) == tuple:
+            self.signatures.append(sign)
+        else:
+            raise Exception("Signature is not a tuple")
 
+    def getPrintableTransactionString(self):
+        temp = ""
+        for t in self.transactions:
+            temp = temp + str(t) + "\n"
+
+        temp = temp + "Verifier Rewards: \n"
+        for sign in self.signatures:
+            temp = temp + "$: {0} to {1}\n".format(self.verifierReward, sign[0])
+        return temp
 
     def __str__(self):
-        return "BlockID: {0} CoindBase: {1} Tr: {2} PreviousHash : {3} Hash:{4}".format(self.id,
-                                                                                        self.coinbase,
-                                                                                        self.transactions,
-                                                                                        self.prevhash,
-                                                                                        self.hash)
+        return "------------------------------------------------\nBlockID: {0} \nCoindBase: {1} \nTr: \n{2} \nPreviousHash : {3} \nHash:{4} \nminer : {5} \nNumber of Signatures: {6}\n------------------------------------------------\n".format(
+            self.id,
+            self.coinbase,
+            self.getPrintableTransactionString(),
+            self.prevhash[0:14],
+            self.hash[0:14], self.miner, len(self.signatures))

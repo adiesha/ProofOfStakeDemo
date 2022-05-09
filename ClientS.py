@@ -10,6 +10,7 @@ import threading
 import time
 
 import rsa
+
 from BlockchainS import BlockchainS
 
 
@@ -247,6 +248,9 @@ class ClientS():
             elif resp[0] == 'g':
                 blockid = int(input("input the block id"))
                 print(self.bc.getBlock(blockid))
+            elif resp[0] == 'm':
+                print(raft.getNextMiner(self.bc.getLastBlockNumber() + 1))
+                print(self.bc.ownershipMap)
             elif resp[0] == 'n':
                 raft.timeoutFlag = True
                 raft.receivedHeartBeat = False
