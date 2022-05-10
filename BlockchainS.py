@@ -25,6 +25,7 @@ class BlockchainS:
         self.verifierReward = 10
         self.ownershipMap = {}
         self.raft = None
+        self.maxOwnershipstake = None
 
     def __str__(self):
         return "Data {0}".format(self.data)
@@ -301,16 +302,21 @@ class BlockchainS:
 
         if type == 'hook':
             # validate the block and send the signature
-            if self.validate(msg) and self.validateBlock(msg):
+            if self.validate(msg) and self.validateBlock(msg) and self.validateStake(msg):
                 print("validated")
                 signature = self.addSignature(msg)
 
-                return [True, "Block validated", (self.clientid, signature)]
+                return [True, "Block validated by node {0}".format(self.clientid), (self.clientid, signature)]
             else:
                 print("not validated")
                 return [False, "block not validated"]
 
         elif type == 'reply':
+            if not message['response']:
+                print("Block was rejected by miner {0} reason {1} response {2}".format(nid, message['replymsg'],
+                                                                                       message['response']))
+                return [False, "Block was rejected by miner {0} reason {1}".format(nid, message['replymsg'])]
+
             nd, signature = message['signature']
             assert nd == nid
             result = self.validateSignature(msg.hash, signature, nid)
@@ -339,7 +345,7 @@ class BlockchainS:
                         "Invalid signature was received as a reply for block id: {0} by node {1}".format(msg.id, nid)]
         elif type == 'commit':
             self.addNewBlockToChain(msg)
-            return [True, "Added to the blocl"]
+            return [True, "Added to the block"]
         else:
             print("Incorrect type")
             return [False, "Incorrect request type"]
@@ -468,6 +474,34 @@ class BlockchainS:
             self.last.committed = True
             print("Commit message for block id: {0}".format(self.last.id))
             self.sendMessage(self.last, "commit")
+
+    def validateStake(self, block):
+        miner = block.miner
+        noOfBlocks = self.getLastBlockNumber()
+        self.updateTheownershipMap()
+        print(self.ownershipMap)
+        newNumberofBlocksfortheminer = self.ownershipMap[miner] + 1
+        if noOfBlocks == 0:
+            print("Blockchain is empty. Therefore everyone has 0 ownership")
+            return True
+        else:
+            if newNumberofBlocksfortheminer / (noOfBlocks + 1) > self.getMaxOwnershipStake():
+                print("Ownership stake for miner {0} exceeds {1}>{2} if this block is added to the blockchain".format(
+                    miner, (newNumberofBlocksfortheminer / (noOfBlocks + 1)),
+                    self.getMaxOwnershipStake()))
+                return False
+            else:
+                print("Ownership stake for miner {0} would be {1} after adding this block".format(miner,
+                                                                                                  newNumberofBlocksfortheminer / (
+                                                                                                          noOfBlocks + 1)))
+                return True
+        pass
+
+    def getMaxOwnershipStake(self):
+        if self.map is None:
+            return 0.4
+        else:
+            return 2 / (len(self.map)) + 1
 
 
 def _persist(obj, log):
