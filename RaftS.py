@@ -1330,7 +1330,11 @@ class RaftS:
         nextblockid = self.bc.getLastBlockNumber() + 1
         # find the lowest ownership node and give them the chance
         self.bc.updateTheownershipMap()
-        min_key = min(self.bc.ownershipMap, key=self.bc.ownershipMap.get)
+        minval = min(self.bc.ownershipMap.values())
+        res = list(filter(lambda x: self.bc.ownershipMap[x] == minval, self.bc.ownershipMap))
+        # assuming res is not empty as self.bc.ownershipMap is not empty
+        min_key = random.choice(res)
+        # min_key = min(self.bc.ownershipMap, key=self.bc.ownershipMap.get)
         self.blockIdvsMiner[nextblockid] = min_key
         self.addRequest((nextblockid, min_key))
         return min_key, nextblockid
