@@ -350,48 +350,6 @@ class BlockchainS:
             print("Incorrect type")
             return [False, "Incorrect request type"]
 
-        return
-
-        # find the latest block that is common with the list and the bc
-        currenttemp = self.last
-        filter = []
-        while currenttemp is not None:
-            filter = [b for b in lst if b.hash == currenttemp.hash]
-            if filter:
-                break
-            else:
-                currenttemp = currenttemp.prev
-
-        self.lock.acquire()
-        if filter:
-            currentBlock = filter[0]
-            tempid = currentBlock.id + 1
-            self.last = currentBlock
-        else:
-            self.last = None
-            tempid = 1
-        while tempid <= msg.id:
-            # find the block from the list
-            NextBlock = [b for b in lst if b.id == tempid]
-            blnew = NextBlock[0]
-            self.extractData()
-            if not self.validateBlock(blnew):
-                print("New block validation failed. Not going to add it to the blockchain Block Id {0}".format(
-                    blnew.id))
-                return False, "New block validation failed. Not going to add it to the blockchain Block Id {0}".format(
-                    blnew.id)
-            else:
-                # validate the block hashes
-                if not self.validate(blnew):
-                    print("Block hashes does not match")
-                    return False, "Block hashes does not match"
-                else:
-                    print("validation successful for block {0}".format(blnew))
-                    self.addNewBlockToChain(blnew)
-
-            tempid += 1
-        self.lock.release()
-
     def addSignature(self, block):
         hs = block.gethash()
         signature = rsa.sign(hs.encode(), self.privatekey, 'SHA-256')
@@ -477,6 +435,13 @@ class BlockchainS:
 
     def validateStake(self, block):
         miner = block.miner
+        blockid = block.id
+        minerfortheblockid = self.raft.getNextMiner(blockid)
+        if blockid != minerfortheblockid[1]:
+            print("Miner for this block id does not match. block id received {0} vs actual block id {1}".format(blockid,
+                                                                                                                minerfortheblockid[
+                                                                                                                    1]))
+            return False
         noOfBlocks = self.getLastBlockNumber()
         self.updateTheownershipMap()
         print(self.ownershipMap)
