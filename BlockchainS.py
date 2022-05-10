@@ -184,6 +184,7 @@ class BlockchainS:
         # print(temp)
 
         data = {}
+        self.ownershipMap = {}
         while temp:
             bl = temp.pop()
             if not bl.committed:

@@ -233,6 +233,7 @@ class ClientS():
                 print("Display Blockchain")
                 bc.printChain()
                 raft._diagnostics()
+                raft.printLog()
                 # d.displayCalendar()
             elif resp[0] == 'l':
                 print(bc.last)

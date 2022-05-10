@@ -12,6 +12,7 @@ from http.client import CannotSendRequest
 from time import sleep
 from xmlrpc.client import ServerProxy
 from xmlrpc.server import SimpleXMLRPCServer
+
 import numpy as np
 
 
@@ -1302,23 +1303,36 @@ class RaftS:
         return {"b": self.bstate, "r": self.rstate, "m": self.gameMessage}
 
     def getNextMiner(self, blocknumber):
-        if blocknumber in self.blockIdvsMiner:
-            return self.blockIdvsMiner[blocknumber], blocknumber
-        nextblockid = self.bc.getLastBlockNumber() + 1
+
         leaderid = self.getLeaderInfo()
         print("Leader id {0}".format(leaderid))
         if leaderid is None:
             return None
         elif leaderid == self.id:
-            return self.choosethenextminer(nextblockid)
+            return self.choosethenextminer(blocknumber)
         else:
-            return self.map[leaderid].choosethenextminer(nextblockid)
+            return self.map[leaderid].choosethenextminer(blocknumber)
 
-    def choosethenextminer(self, nextblockid):
+    def updateblockIdvsMiner(self):
+        self.blockIdvsMiner = {}
+        if self.commitIndex == -1:
+            return
+        else:
+            for i in range(len(self.log)):
+                blockvsidtuple = self.log[i].value
+                # print(blockvsidtuple)
+                self.blockIdvsMiner[blockvsidtuple[0]] = blockvsidtuple[1]
+
+    def choosethenextminer(self, blocknumber):
+        self.updateblockIdvsMiner()
+        if blocknumber in self.blockIdvsMiner:
+            return self.blockIdvsMiner[blocknumber], blocknumber
+        nextblockid = self.bc.getLastBlockNumber() + 1
         # find the lowest ownership node and give them the chance
         self.bc.updateTheownershipMap()
         min_key = min(self.bc.ownershipMap, key=self.bc.ownershipMap.get)
         self.blockIdvsMiner[nextblockid] = min_key
+        self.addRequest((nextblockid, min_key))
         return min_key, nextblockid
 
 
