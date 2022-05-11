@@ -161,10 +161,10 @@ class RaftS:
         return True, self.currentTerm
 
     def checkwhetheritsaheratbeat(self, info):
-        print(
-            "Checking whether appendEntry is a Heartbeat from {0} to node {1} leader Term {2}".format(info['leaderid'],
-                                                                                                      self.id,
-                                                                                                      info['term']))
+        # print(
+        #     "Checking whether appendEntry is a Heartbeat from {0} to node {1} leader Term {2}".format(info['leaderid'],
+        #                                                                                               self.id,
+        #                                                                                               info['term']))
         logging.debug(
             "Checking whether appendEntry is a Heartbeat from {0} to node {1} leader Term {2}".format(info['leaderid'],
                                                                                                       self.id,
@@ -205,8 +205,8 @@ class RaftS:
                     return False
                 self.commitIndex = info['leadercommit']
                 self.updateCommittedEntries()
-                print("Node {0} 's current Term is updated to {1} state {2}".format(self.id, self.currentTerm,
-                                                                                    self.state))
+                # print("Node {0} 's current Term is updated to {1} state {2}".format(self.id, self.currentTerm,
+                #                                                                     self.state))
                 self._persist.updateCurrentInfo(self.currentTerm, self.votedFor, self.log)
                 _persist(self._persist, self.log)
                 return True
@@ -870,7 +870,7 @@ class RaftS:
         return thread
 
     def _executeRPCServer(self):
-        server = SimpleXMLRPCServer((self.clientip, self.clientPort), logRequests=True, allow_none=True)
+        server = SimpleXMLRPCServer((self.clientip, self.clientPort), logRequests=False, allow_none=True)
         server.register_instance(self)
         try:
             print("Serving........")
@@ -1414,7 +1414,7 @@ def _persist(obj, log):
 
     if log and log is not None:
         try:
-            print("Logging tto readable storagre {0}".format(obj, id))
+            # print("Logging tto readable storagre {0}".format(obj, id))
             copy = log.copy()
             file = open("log/log-readable{0}.txt".format(obj.id), "w")
             for e in copy:

@@ -77,9 +77,9 @@ class BlockS:
         return temp
 
     def __str__(self):
-        return "------------------------------------------------\nBlockID: {0} \nCoindBase: {1} \nTr: \n{2} \nPreviousHash : {3} \nHash:{4} \nminer : {5} \nNumber of Signatures: {6}\n------------------------------------------------\n".format(
+        return "------------------------------------------------\nBlockID: {0} \nCoindBase: {1} \nTr: \n{2} \nHash : {3} \nPreviousHash:{4} \nminer : {5} \nNumber of Signatures: {6}\n------------------------------------------------\n".format(
             self.id,
             self.coinbase,
             self.getPrintableTransactionString(),
-            self.prevhash[0:14],
-            self.hash[0:14], self.miner, len(self.signatures))
+            self.hash[0:14],
+            self.prevhash[0:14], self.miner, len(self.signatures))

@@ -188,7 +188,7 @@ class ClientS():
                             msg = unpickledRequest['msg']
                             type = unpickledRequest['type']
                             # lst = unpickledRequest['list']
-                            print(nid, msg, type)
+                            # print(nid, msg, type)
                             result = self.bc.receiveMessage(unpickledRequest)
 
                             # self.bc.receiveMessage((np, mtx, nid))
@@ -219,25 +219,40 @@ class ClientS():
 
     def menu(self, bc, raft):
         while True:
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+            print("Proof of stake Blockchain Menu")
             print("Display Blockchain\t[d]")
             print("Display Last Block\t[l]")
             print("Create new block\t[b]")
-            print("Press e to print diagnostics")
+            print("Press e to print summary of the blockchain")
+            print("Press t to toggle the transaction service")
+            print("Press r to display raft diagnostics")
+            print("Press g to print details of a specific block in the blockchain")
+            print("Press m to find the details of the next block miner")
+            print("Press n to invoke raft election on this node")
             print("Quit    \t[q]")
+            print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 
             resp = input("Choice: ").lower().split()
             if len(resp) < 1:
                 print("Not a correct input")
                 continue
             if resp[0] == 'd':
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
                 print("Display Blockchain")
                 bc.printChain()
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            elif resp[0] == 'r':
+                print("####################################")
+                print("Printing raft diagnostics and the log")
                 raft._diagnostics()
                 raft.printLog()
-                # d.displayCalendar()
             elif resp[0] == 'l':
+                print("############################")
+                print("Printing the last block in the blockchain")
                 print(bc.last)
             elif resp[0] == 'b':
+                print("*******************************************")
                 self.bc.createAblock(bc.createSetOfTransacations())
             elif resp[0] == 's':
                 self.bc.sendMessage()
@@ -246,13 +261,31 @@ class ClientS():
                 break
             elif resp[0] == 'e':
                 self.bc.extractData()
+                print("====================")
+                print("Printing blockchain summary")
+                print(self.bc.data)
+                print("====================")
+                print("Printing ownership details")
+                print(self.bc.ownershipMap)
+                print("====================")
             elif resp[0] == 'g':
-                blockid = int(input("input the block id"))
+                print("!!!!!!!!!!")
+                blockid = int(input("input the block id: "))
+                print("!!!!!!!!!!")
                 print(self.bc.getBlock(blockid))
             elif resp[0] == 'm':
-                print(raft.getNextMiner(self.bc.getLastBlockNumber() + 1))
+                print("Printing details on the next block to be mined by")
+                minerinfo = raft.getNextMiner(self.bc.getLastBlockNumber() + 1)
+                print("+++++++++++++++++++++")
+                print("Block {0} should be mined by node {1}".format(minerinfo[1], minerinfo[0]))
+                print("+++++++++++++++++++++")
+                # print(raft.getNextMiner(self.bc.getLastBlockNumber() + 1))
+                print("Printing ownership details ----->")
                 print(self.bc.ownershipMap)
             elif resp[0] == 'n':
+                print("------")
+                print("Invoking election on this node")
+                print("------")
                 raft.timeoutFlag = True
                 raft.receivedHeartBeat = False
                 raft.leaderTimeoutFlag = True

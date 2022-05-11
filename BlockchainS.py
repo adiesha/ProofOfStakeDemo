@@ -225,7 +225,7 @@ class BlockchainS:
                 else:
                     data[id] = self.verifierReward
             self.data = data
-        print(self.data)
+        # print(self.data)
 
     def createSetOfTransacations(self):
         temptr = []
@@ -266,13 +266,19 @@ class BlockchainS:
                 s.sendall(m)
                 data = self.receiveWhole(s)
                 # print(data)
-                print(pickle.loads(data))
+                # print(pickle.loads(data))
 
                 self.receiveMessage(pickle.loads(data))
 
             except ConnectionRefusedError:
                 print("Connection cannot be established to node {0}".format(k))
                 logging.error("Connection cannot be established to node {0}".format(k))
+
+    def createThreadTosendTheMessageViaSocket(self, k, message):
+        thread = threading.Thread(target=self.sendViaSocket, args=(k, message))
+        thread.daemon = True
+        thread.start()
+        return thread
 
     def receiveWhole(self, s):
         BUFF_SIZE = 4096  # 4 KiB
@@ -290,12 +296,12 @@ class BlockchainS:
         msg = message['msg']
         type = message['type']
 
-        print("Block id {0}".format(msg.id))
-        print("Node id {0}".format(nid))
+        print("Bid {0} Nid {1}".format(msg.id, nid))
         # if the block id already exist in the bc reject
         currentid = 0 if self.last is None else self.last.id
         if currentid >= msg.id:
-            print("New block already exist. current last block {0}: Received block {1}".format(self.last, msg))
+            print("Block already exist. current last block {0}: Received block {1}".format(self.last.id, msg.id))
+            logging.debug("New block already exist. current last block {0}: Received block {1}".format(self.last, msg))
             return [False, "New block already exist. current last block {0}: Received block {1}".format(self.last, msg)]
         # validate the block for double spending else reject
         self.extractData()
@@ -444,7 +450,7 @@ class BlockchainS:
             return False
         noOfBlocks = self.getLastBlockNumber()
         self.updateTheownershipMap()
-        print(self.ownershipMap)
+        # print(self.ownershipMap)
         newNumberofBlocksfortheminer = self.ownershipMap[miner] + 1
         if noOfBlocks == 0:
             print("Blockchain is empty. Therefore everyone has 0 ownership")
@@ -479,7 +485,7 @@ def _persist(obj, log):
 
     if log and log is not None:
         try:
-            print("Logging to readable storagre {0}".format(obj, id))
+            # print("Logging to readable storagre {0}".format(obj, id))
             copy = log.copy()
             file = open("log/log-readable{0}.txt".format(obj.id), "w")
             for e in copy:
