@@ -290,6 +290,10 @@ class ClientS():
                 raft.receivedHeartBeat = False
                 raft.leaderTimeoutFlag = True
                 raft.electionTimeoutFlag = False
+            elif resp[0] == 'i':
+                print("Increase stake on this node")
+                incstake = int(input("Input the new stake amount: "))
+                self.bc.stake = incstake
 
     def main(self):
         print('Number of arguments:', len(sys.argv), 'arguments.')
@@ -335,6 +339,7 @@ class ClientS():
             # self.createThreadToListen()
             # self.createHeartBeatThread()
             self.createThreadToListen()
+            self.bc.createGenesisBlock()
             self.menu(blockchain, raft)
 
     def createRSAKeys(self):

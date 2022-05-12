@@ -1332,6 +1332,8 @@ class RaftS:
         self.bc.updateTheownershipMap()
         minval = min(self.bc.ownershipMap.values())
         res = list(filter(lambda x: self.bc.ownershipMap[x] == minval, self.bc.ownershipMap))
+        if 0 in res:
+            res.remove(0)
         # assuming res is not empty as self.bc.ownershipMap is not empty
         min_key = random.choice(res)
         # min_key = min(self.bc.ownershipMap, key=self.bc.ownershipMap.get)

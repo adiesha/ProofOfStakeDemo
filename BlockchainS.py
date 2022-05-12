@@ -26,6 +26,7 @@ class BlockchainS:
         self.ownershipMap = {}
         self.raft = None
         self.maxOwnershipstake = None
+        self.stake = 25
 
     def __str__(self):
         return "Data {0}".format(self.data)
@@ -69,24 +70,19 @@ class BlockchainS:
         self.sendMessage(block, "hook")
 
         # commit the message
-        self.commitBlock()
+        noOfconsensus = 1 + len(self.hook.signatures)
+        if noOfconsensus >= self.getSimpleMajority():
+            print("commit block: Number of consensus {0}".format(noOfconsensus))
+            if self.validateEnoughStake(self.hook):
+                self.addNewBlockToChain(self.hook)
+                self.commitBlock()
+            else:
+                print("Not enough stake was put forward by the verifiers. Block cannot be committed")
+        else:
+            print("Majority was not received for committing the block")
 
-        # newblockid = self.getLastBlockId() + 1
-        # block = BlockS(newblockid)
-        # block.addTransactions(transactions)
-        # # add prev block hash
-        # if self.last is not None:
-        #     block.prevhash = self.last.hash
-        # block.coinbase = (self.clientid, 100)
-        #
-        # self.lock.acquire()
-        # self.extractData()
-        # if self.validateBlock(block) and self.validate(block):
-        #     self.addNewBlockToChain(block)
-        # else:
-        #     print("Random transactions has a conflict try again")
-        # self.lock.release()
-        # self.sendMessage()
+        # resetting the hook
+        self.hook = None
 
     def hookNewBlock(self, block):
         self.hook = block
@@ -191,10 +187,11 @@ class BlockchainS:
             if not bl.committed:
                 continue
             # calculate the ownership percentages
-            if bl.miner in self.ownershipMap:
-                self.ownershipMap[bl.miner] = self.ownershipMap[bl.miner] + 1
-            else:
-                self.ownershipMap[bl.miner] = 1
+            if bl.miner != 0:
+                if bl.miner in self.ownershipMap:
+                    self.ownershipMap[bl.miner] = self.ownershipMap[bl.miner] + 1
+                else:
+                    self.ownershipMap[bl.miner] = 1
 
             coinbase = bl.coinbase
             if coinbase[0] is not None:
@@ -232,14 +229,14 @@ class BlockchainS:
         if self.data is None:
             return []
         else:
-            noOftransactions = random.randint(1, 10)
+            noOftransactions = random.randint(1, 3)
             print("Selected transaction amount {0}".format(noOftransactions))
             keys = list(self.data.keys())
             while (noOftransactions > 0 and keys):
                 choice = random.choice(keys)
                 keys.remove(choice)
                 sendersbalance = self.data[choice]
-                amount = random.randint(0, sendersbalance)
+                amount = random.randint(0, int(sendersbalance / 4))
                 tr = TransactionS()
                 tr.sender = choice
                 tr.recipient = random.randint(0, 10)
@@ -311,8 +308,8 @@ class BlockchainS:
             if self.validate(msg) and self.validateBlock(msg) and self.validateStake(msg):
                 print("validated")
                 signature = self.addSignature(msg)
-
-                return [True, "Block validated by node {0}".format(self.clientid), (self.clientid, signature)]
+                st = self.determineStakeAndAddThem()
+                return [True, "Block validated by node {0}".format(self.clientid), (self.clientid, signature, st)]
             else:
                 print("not validated")
                 return [False, "block not validated"]
@@ -323,7 +320,7 @@ class BlockchainS:
                                                                                        message['response']))
                 return [False, "Block was rejected by miner {0} reason {1}".format(nid, message['replymsg'])]
 
-            nd, signature = message['signature']
+            nd, signature, stake = message['signature']
             assert nd == nid
             result = self.validateSignature(msg.hash, signature, nid)
             if result:
@@ -334,16 +331,17 @@ class BlockchainS:
                     print("Block was already committed, therefore signature will not be added")
                     return True, "Block was already committed, therefore signature will not be added"
 
-                self.hook.addSign((nid, signature))
+                self.hook.addSign((nid, signature, stake))
                 # if number of signatures are more than the majority then accept
                 # number of signatures = len(self.hook.signatures) + 1 for the miner
-                noOfconsensus = 1 + len(self.hook.signatures)
-                if noOfconsensus >= self.getSimpleMajority():
-                    print("commit block: Number of consensus {0}".format(noOfconsensus))
-                    self.addNewBlockToChain(self.hook)
-                    return [True, "Block was committed"]
-                else:
-                    return [True, "Reply signature was validated for block id: {0} by node {1}".format(msg.id, nid)]
+
+                # noOfconsensus = 1 + len(self.hook.signatures)
+                # if noOfconsensus >= self.getSimpleMajority() and self.validateEnoughStake(self.hook):
+                #     print("commit block: Number of consensus {0}".format(noOfconsensus))
+                #     self.addNewBlockToChain(self.hook)
+                #     return [True, "Block was committed"]
+                # else:
+                #     return [True, "Reply signature was validated for block id: {0} by node {1}".format(msg.id, nid)]
 
             else:
                 print("Invalid signature was received as a reply for block id: {0} by node {1}".format(msg.id, nid))
@@ -422,7 +420,9 @@ class BlockchainS:
         else:
             temp = self.last
             while temp is not None:
-                self.ownershipMap[temp.miner] = self.ownershipMap[temp.miner] + 1
+                # skip the genesis block
+                if temp.miner != 0:
+                    self.ownershipMap[temp.miner] = self.ownershipMap[temp.miner] + 1
                 temp = temp.prev
 
     def getSimpleMajority(self):
@@ -473,6 +473,39 @@ class BlockchainS:
             return 0.4
         else:
             return 2 / (len(self.map)) + 1
+
+    def createGenesisBlock(self):
+        block = BlockS(1)
+        transactions = []
+        for k in self.map.keys():
+            t = TransactionS()
+            t.amount = 100
+            t.sender = 0
+            t.recipient = k
+            transactions.append(t)
+
+        block.addTransactions(transactions)
+        block.miner = 0
+        if self.last is not None:
+            block.prevhash = self.last.hash
+        block.coinbase = (0, len(self.map) * 100)
+        block.hash = block.getHash()
+        self.addNewBlockToChain(block)
+
+    def determineStakeAndAddThem(self):
+        return self.stake
+
+    def validateEnoughStake(self, block):
+        valueofblock = 0
+        for t in block.transactions:
+            valueofblock = valueofblock + t.amount
+        valueofpooledstake = 0
+        for s in block.signatures:
+            valueofpooledstake = valueofpooledstake + s[2]
+        if valueofpooledstake >= valueofblock:
+            return True
+        else:
+            return False
 
 
 def _persist(obj, log):
