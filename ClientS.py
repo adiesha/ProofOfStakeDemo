@@ -29,6 +29,7 @@ class ClientS():
         self.clientmutex = threading.Lock()
         self.publickey = None
         self.privateKey = None
+        self.txsrvcflag = False
 
     def createJSONReq(self, typeReq, nodes=None, slot=None):
         # Initialize node
@@ -217,6 +218,19 @@ class ClientS():
                         self.clientmutex.release()
                         break
 
+    def txservice(self):
+        while True:
+            time.sleep(15)
+            if self.txsrvcflag:
+                print("Transaction Service invoked. Trying to create a new block in node {0}".format(self.seq))
+                self.bc.createAblock(self.bc.createSetOfTransacations())
+
+    def createtxservicethread(self):
+        thread = threading.Thread(target=self.txservice)
+        thread.daemon = True
+        thread.start()
+        return thread
+
     def menu(self, bc, raft):
         while True:
             print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
@@ -294,6 +308,11 @@ class ClientS():
                 print("Increase stake on this node")
                 incstake = int(input("Input the new stake amount: "))
                 self.bc.stake = incstake
+            elif resp[0] == 't':
+                self.txsrvcflag = not self.txsrvcflag
+                print("----------------------------------------------------")
+                print("Toggling txservice flag->{0}".format(self.txsrvcflag))
+                print("::::::::::::::::::::::::::::::::::::::::::::::::::::")
 
     def main(self):
         print('Number of arguments:', len(sys.argv), 'arguments.')
@@ -340,6 +359,7 @@ class ClientS():
             # self.createHeartBeatThread()
             self.createThreadToListen()
             self.bc.createGenesisBlock()
+            self.createtxservicethread()
             self.menu(blockchain, raft)
 
     def createRSAKeys(self):
