@@ -110,6 +110,7 @@ class BlockchainS:
             else:
                 print("Sender not in the block chain {0}".format(sender))
                 return False
+        print("Block {0} does not contain double spending".format(block.id))
         return True
 
     def addNewBlockToChain(self, block):
@@ -462,6 +463,9 @@ class BlockchainS:
                     self.getMaxOwnershipStake()))
                 return False
             else:
+                print(
+                    "Ownership stake for node {0} is acceptable. Therefore ownership validation is successful.".format(
+                        block.miner))
                 print("Ownership stake for miner {0} would be {1} after adding this block".format(miner,
                                                                                                   newNumberofBlocksfortheminer / (
                                                                                                           noOfBlocks + 1)))
@@ -503,8 +507,15 @@ class BlockchainS:
         for s in block.signatures:
             valueofpooledstake = valueofpooledstake + s[2]
         if valueofpooledstake >= valueofblock:
+            print(
+                "Block {0} contains enough stake from verifiers. Suitable for commit if other validations pass".format(
+                    block.id))
             return True
         else:
+            print(
+                "Block {0} does not have enough stake from verifiers to exceed the total transactions. Please "
+                "increase the stake and try again".format(
+                    block.id))
             return False
 
 

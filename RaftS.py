@@ -119,7 +119,7 @@ class RaftS:
             else:
                 print("prev:" + str(prevLogIndex))
                 # if node is behind the leader prevlogindex may not be in the log
-                print("len of log" + str(len(self.log)))
+                print("len of log: " + str(len(self.log)))
                 if self.log[prevLogIndex].term != prevLogTerm:
                     # print("haha")
                     self.mutexForAppendEntry.release()

@@ -282,6 +282,10 @@ class ClientS():
                 print("Printing ownership details")
                 print(self.bc.ownershipMap)
                 print("====================")
+                print("====================")
+                print("Printing stake")
+                print(self.bc.stake)
+                print("====================")
             elif resp[0] == 'g':
                 print("!!!!!!!!!!")
                 blockid = int(input("input the block id: "))
